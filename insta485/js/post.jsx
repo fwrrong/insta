@@ -6,6 +6,7 @@ import Comments from "./comments";
 import PostComment from "./postComment";
 import NumLikes from "./numLikes";
 
+
 // The parameter of this function is an object with a string called url inside it.
 // url is a prop for the Post component.
 export default function Post({ url }) {
@@ -23,7 +24,7 @@ export default function Post({ url }) {
   const [numLikes, setNumLikes] = useState(0);
   const [lognameLikesThis, setLognameLikesThis] = useState(false);
   const [likesUrl, setLikesUrl] = useState("");
-  const [postid, setPostid] = useState();
+  const [postid, setPostid] = useState(1);
   const [commentText, setCommentText] = React.useState('');
 
   useEffect(() => {
@@ -42,7 +43,7 @@ export default function Post({ url }) {
           setOwner(data.owner);
           setOwnerImgUrl(data.ownerImgUrl);
           setOwnerShowUrl(data.ownerShowUrl);
-          setPostShowUrl(data.ownerShowUrl);
+          setPostShowUrl(data.postShowUrl);
           setNumLikes(data.likes.numLikes);
           setLognameLikesThis(data.likes.lognameLikesThis);
           setLikesUrl(data.likes.url);
@@ -60,8 +61,9 @@ export default function Post({ url }) {
     const newLikeStatus = !lognameLikesThis;
     if (newLikeStatus) {
         // Liking the post
-        console.log(newLikeStatus)
-        fetch(`/api/v1/likes/?postid=${postid}`, {
+        // console.log(newLikeStatus)
+        
+        fetch(`/api/v1/likes/?postid=${url.split("/").slice(-2)[0]}`, {
             method: 'POST',
             credentials: "same-origin",
         })
@@ -76,22 +78,28 @@ export default function Post({ url }) {
         .catch(error => {
             console.error('Error:', error);
         });
-    } else {
+    } else { 
         fetch(likesUrl, {
             method: 'DELETE'
         })
-        .then(response => {
-            if (response.status === 204) {  // No content, successful deletion
-                setLognameLikesThis(false);
-                setLikesUrl(null);
-                setNumLikes(numLikes-1)
-            }
+        .then((response) => {
+          console.log("Made request");
+          if (!response.ok) throw Error(response.statusText);
+          return response.text().then((text) => (text ? JSON.parse(text) : {}));
         })
+      
+        // .then(response => {
+        //     if (response.status === 204) {  // No content, successful deletion
+        //         setLognameLikesThis(false);
+        //         setLikesUrl("");
+        //         setNumLikes(numLikes-1)
+        //     }
+        // })
         .catch(error => {
             console.error('Error:', error);
         });
     }
-  }, [lognameLikesThis, postid, likesUrl, numLikes]);
+  }, [lognameLikesThis, likesUrl, numLikes, url]);
 
   const handleDeleteComment = React.useCallback((commentUrl, commentId) => {
     fetch(commentUrl, {
@@ -110,8 +118,10 @@ export default function Post({ url }) {
 
   const handleSubmitComment = React.useCallback((event) => {
     event.preventDefault();
-    fetch(`/api/v1/comments/?postid=${postid}`, {
+    console.log('PostID:', postid);
+    fetch(`/api/v1/comments/?postid=${url.split("/").slice(-2)[0]}`, {
       method: 'POST',
+      credentials: "same-origin",
       body: JSON.stringify({ text: commentText }),
       headers: {
           'Content-Type': 'application/json'
